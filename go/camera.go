@@ -2,47 +2,35 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"image/jpeg"
-	"time"
+	"sync"
 )
 
-var globalPacketStore = make(map[uint32]ImageData)
+var globalPacketStore = make(map[uint32]*ImageData)
 
 type Camera struct {
-	ID                      uint16
-	Name                    [20]byte
-	Image                   [][][]uint8
-	Packets                 []UDPPacket
-	Bands                   uint16
-	Width                   uint16
-	Height                  uint16
-	CurrentDisplayTimestamp int64 // Useful for detecting old packets
+	ID   uint16
+	Name [20]byte
+
+	Packets []UDPPacket
+	Bands   uint16
+	Width   uint16
+	Height  uint16
+	Buffer  *ImageBuffer
 }
 
 func newCamera(name [20]byte, bands uint16, width uint16, height uint16, ID uint16) Camera {
 	// Initialize the image slice with the specified dimensions.
-	image := make([][][]byte, height)
-	for y := range image {
-		image[y] = make([][]byte, width)
-		for x := range image[y] {
-			image[y][x] = make([]byte, bands)
-		}
-	}
 
 	return Camera{
-		ID:                      ID,
-		Name:                    name,
-		Image:                   image,
-		Bands:                   bands,
-		Width:                   width,
-		Height:                  height,
-		CurrentDisplayTimestamp: time.Now().Unix(),
-	}
-}
+		ID:   ID,
+		Name: name,
 
-func (c *Camera) updateImage(image [][][]uint8) {
-	c.Image = image
+		Bands:  bands,
+		Width:  width,
+		Height: height,
+		Buffer: NewImageBuffer(5),
+	}
 }
 
 func (c *Camera) exportCamera() ExportedCamera {
@@ -53,52 +41,11 @@ func (c *Camera) getUDPPackets() []UDPPacket {
 	return (c.Packets)
 }
 
-func (c Camera) SplitIntoUDPPackets() []UDPPacket {
-	// We flatten the image for transmission
-	var imageData []byte
-	for y := range c.Image {
-		for x := range c.Image[y] {
-			for b := range c.Image[y][x] {
-				imageData = append(imageData, c.Image[y][x][b])
-			}
-		}
-	}
-
-	packetSize := 512 - 4 // Adjust for the size of PacketNum and TotalPackets
-	totalPackets := (len(imageData) + packetSize - 1) / packetSize
-
-	var packets []UDPPacket
-	for i := 0; i < len(imageData); i += packetSize {
-		//Adjust this to modify the packet_length
-		var packetData [512]byte
-
-		end := i + packetSize
-		if end > len(imageData) {
-			end = len(imageData)
-		}
-
-		// Set PacketNum and TotalPackets
-		packetNum := uint16(i / packetSize)
-		binary.LittleEndian.PutUint16(packetData[0:2], packetNum)
-		binary.LittleEndian.PutUint16(packetData[2:4], uint16(totalPackets))
-
-		// Copy image data into the packet
-		copy(packetData[4:], imageData[i:end])
-
-		packets = append(packets, UDPPacket{
-			PacketNum:    packetNum,
-			TotalPackets: uint16(totalPackets),
-			Data:         packetData,
-		})
-	}
-
-	return packets
-}
-
 func (c *Camera) handleIncomingPacket(packet ImagePacket) {
 	messageID := packet.MessageID
 	packetNum := packet.PacketNum
 	totalPackets := packet.TotalPackets
+	seqNum := packet.SeqNum
 	data := packet.Data[:]
 
 	// We should probably limit concurrent access :(
@@ -107,29 +54,34 @@ func (c *Camera) handleIncomingPacket(packet ImagePacket) {
 	imageData, exists := globalPacketStore[messageID]
 	if !exists {
 		// Initialize if it's a new message
-		imageData = ImageData{
+		imageData = &ImageData{
 			Packets:      make(map[uint16][]byte),
 			Received:     0,
 			TotalPackets: totalPackets,
-			Timestamp:    time.Now().Unix(),
+			Mutex:        sync.Mutex{},
 		}
+		globalPacketStore[messageID] = imageData
 	} else {
-		// Check if the incoming packet is older than the current display
-		if imageData.Timestamp < c.CurrentDisplayTimestamp {
-			return // Ignore older packets
-		}
+		//if seqNum > c.Buffer.GetSmallestSeqNum().SeqNum {
+		//	return
+		//}
+
+		// if seqNum<
+		//When we do the buffer check if the sequence number is lower than the lowest buffer
+
 	}
 
 	// Store the packet data
+	imageData.Mutex.Lock()
 	imageData.Packets[packetNum] = data
 	imageData.Received++
-
+	imageData.Mutex.Unlock()
 	// Put the modified struct back into the map
 	globalPacketStore[messageID] = imageData
 
 	// Check if all packets are received
 	if imageData.Received == totalPackets {
-		c.CurrentDisplayTimestamp = imageData.Timestamp
+
 		// Reassemble the image
 		var fullImage []byte
 		for p := uint16(0); p < totalPackets; p++ {
@@ -137,14 +89,14 @@ func (c *Camera) handleIncomingPacket(packet ImagePacket) {
 		}
 
 		// Convert the byte slice to the image format
-		c.updateImageFromBytes(fullImage)
+		c.updateImageFromBytes(fullImage, seqNum)
 
 		delete(globalPacketStore, messageID)
 	}
 
 }
 
-func (c *Camera) updateImageFromBytes(jpegBytes []byte) {
+func (c *Camera) updateImageFromBytes(jpegBytes []byte, seqNum uint32) {
 	// We sent the image over the web as a jpg as it increased the speed a LOT
 	// Convert the byte slice into an image
 	imgReader := bytes.NewReader(jpegBytes)
@@ -179,7 +131,57 @@ func (c *Camera) updateImageFromBytes(jpegBytes []byte) {
 		}
 	}
 
-	// Update the camera's image
-	c.Image = newImage
-	c.Packets = c.SplitIntoUDPPackets()
+	packets := c.SplitIntoUDPPackets(seqNum, newImage)
+
+	newItem := ImageBufferItem{
+		SeqNum:  seqNum,
+		Packets: packets,
+	}
+	c.Buffer.Add(newItem)
+}
+
+func (c *Camera) SplitIntoUDPPackets(seqNum uint32, image [][][]uint8) []UDPPacket {
+	// We flatten the image for transmission
+	var imageData []byte
+	for y := range image {
+		for x := range image[y] {
+			for b := range image[y][x] {
+				imageData = append(imageData, image[y][x][b])
+			}
+		}
+	}
+
+	packetSize := 512 // Adjust for the size of PacketNum and TotalPackets
+	totalPackets := (len(imageData) + packetSize - 1) / packetSize
+
+	var packets []UDPPacket
+	for i := 0; i < len(imageData); i += packetSize {
+		// Adjust this to modify the packet_length
+		var packetData [512]byte
+
+		end := i + packetSize
+		if end > len(imageData) {
+			end = len(imageData)
+		}
+
+		// Set PacketNum and TotalPackets
+		packetNum := uint16(i / packetSize)
+
+		// Copy image data into the packet
+		copy(packetData[:], imageData[i:end])
+
+		packets = append(packets, UDPPacket{
+			PacketNum:    packetNum,
+			TotalPackets: uint16(totalPackets),
+			SeqNum:       seqNum,
+			Data:         packetData,
+		})
+	}
+
+	return packets
+}
+
+func (c *Camera) getFeed(seqNum uint32) [][]UDPPacket { // make this return based on the sequenceNumber
+
+	return (c.Buffer.getPackets(seqNum))
 }

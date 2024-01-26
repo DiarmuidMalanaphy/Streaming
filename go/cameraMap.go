@@ -26,14 +26,6 @@ func (cm *CameraMap) removeCamera(c Camera) {
 	delete(cm.cameraMap, c.ID)
 }
 
-func (cm *CameraMap) getFeed(ID uint16) []UDPPacket {
-	return (cm.cameraMap[ID].SplitIntoUDPPackets())
-}
-
-func (cm *CameraMap) updateImage(ID uint16, image [][][]uint8) {
-	cm.cameraMap[ID].updateImage(image)
-}
-
 func (cm *CameraMap) getCamera(ID uint16) (*Camera, bool) {
 	camera, exists := cm.cameraMap[ID]
 	return camera, exists

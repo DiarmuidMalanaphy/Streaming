@@ -17,26 +17,35 @@ def convert_to_numpy(image):
     return (None)
 
 def continuously_request_images(network_tool, ID, bands, height, width, interval):
+    seq_num = 0
+    
     cv2.namedWindow("Video Feed", cv2.WINDOW_NORMAL)
     while True:
         try:
-            
-            result = network_tool.request_feed(ID, bands, height, width)
-            if result is not None:
-                image,timeStamp = result
-                image = convert_to_numpy(image)
-                print(timeStamp)  
-                
-                if image is not None:
-                    # Assuming image is a NumPy array in the correct shape and dtype
-                    cv2.imshow("Video Feed", image)
+            results = network_tool.request_feed(ID, bands, height, width, seq_num)
+            if results is not None:
+                images, new_seq_num = results
+                num_images = len(images)
+
+                # Calculate the time each image should be displayed
+                display_time_per_image = interval / max(1, num_images)
+
+                for image_data in images:
+                    image = convert_to_numpy(image_data)
+                    if image is not None:
+                        cv2.imshow("Video Feed", image)
+                        time.sleep(display_time_per_image)  # Adjusted display time
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break  # Exit the inner loop if 'q' is pressed
+
+                seq_num = new_seq_num
+
             time.sleep(interval)  # Wait for the specified interval
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                break  # Exit the loop if 'q' is pressed
+                break  # Exit the outer loop if 'q' is pressed
 
         except KeyboardInterrupt:
             break  # Exit the loop on keyboard interrupt
-        
 
     cv2.destroyAllWindows()
 
@@ -46,4 +55,4 @@ camera_ID = int(input("Please enter the ID: "))
 
 # Example usage
 tool = Networking(ip_address)
-continuously_request_images(tool, [camera_ID], 3, 200, 200, 0.25)
+continuously_request_images(tool, camera_ID, 3, 200, 200, 0.2)

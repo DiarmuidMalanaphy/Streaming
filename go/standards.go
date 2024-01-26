@@ -1,10 +1,22 @@
 package main
 
+import "sync"
+
 type ImportedCamera struct {
 	Name   [20]byte
 	Bands  uint16
 	Width  uint16
 	Height uint16
+}
+
+type FeedRequest struct {
+	ID     uint16
+	SeqNum uint32
+}
+
+type FeedResponse struct {
+	mostRecentSequenceNumber uint32
+	buffer                   [][]UDPPacket
 }
 
 type ExportedCamera struct {
@@ -30,14 +42,15 @@ func newExportedCamera(c Camera) ExportedCamera {
 type UDPPacket struct {
 	PacketNum    uint16
 	TotalPackets uint16
-
-	Data [512]byte
+	SeqNum       uint32
+	Data         [512]byte
 }
 
 type ImagePacket struct {
 	MessageID    uint32
 	PacketNum    uint16
 	TotalPackets uint16
+	SeqNum       uint32
 	Data         [512]byte
 }
 
@@ -50,5 +63,5 @@ type ImageData struct {
 	Packets      map[uint16][]byte
 	Received     uint16
 	TotalPackets uint16
-	Timestamp    int64 // UNIX timestamp
+	Mutex        sync.Mutex
 }

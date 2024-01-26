@@ -22,7 +22,9 @@ def capture_webcam_images(camera, networkTool):
         return
 
     try:
+        seq_num = 0
         while True:
+            
             # Capture a single frame
             ret, frame = cap.read()
 
@@ -36,9 +38,10 @@ def capture_webcam_images(camera, networkTool):
                 #Resize the frame to the size of the "camera"
             resized_frame = cv2.resize(frame, (camera.width, camera.height))
             frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
-            networkTool.update_camera(frame_rgb, camera.ID)
+            networkTool.update_camera(frame_rgb, camera.ID,seq_num)
 
             # Wait for the frame interval
+            seq_num = seq_num + 1
             time.sleep(frame_interval)
     except KeyboardInterrupt:
         # Exit the loop when interrupted (e.g., by pressing Ctrl+C)
@@ -51,7 +54,7 @@ def capture_webcam_images(camera, networkTool):
 ip_address = input("Please enter the IP address to connect to: ")
 
 #The camera creation is handled by the Server, ID is returned.
-tool = Networking("192.168.1.76")
+tool = Networking(ip_address)
 camera = tool.initialise_camera("Benni", 3, 200, 200)
 camera = Camera(camera[1], camera[2], camera[3], camera[4])
 print("Camera ID is ",camera.ID)

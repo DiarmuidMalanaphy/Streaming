@@ -72,6 +72,7 @@ func main() {
 					fmt.Println(err)
 					outgoingReq, _ := generateRequest(i, RequestFailure)
 					sendUDP(req.Addr.String(), outgoingReq)
+					break
 				}
 				cameraID := i.CameraID
 				camera, exists := cameraMap.getCamera(cameraID)
@@ -84,27 +85,37 @@ func main() {
 				}
 
 			case RequestTypeRequestFeed:
-				var ID uint16
-				err := deserialiseData(req.Request.Payload, &ID)
+				var incoming FeedRequest
+				err := deserialiseData(req.Request.Payload, &incoming)
 
 				if err != nil {
 
-					outgoingReq, _ := generateRequest(ID, RequestFailure)
+					outgoingReq, _ := generateRequest(incoming, RequestFailure)
 					sendUDP(req.Addr.String(), outgoingReq)
 				}
 				if cameraMap != nil {
-					packets := cameraMap.getFeed(ID)
-					for _, packet := range packets {
-						outgoingReq, err := generateRequest(packet, RequestSuccessful)
-						if err != nil {
-							fmt.Println(err)
-							continue
-						}
+					cameraID := incoming.ID
+					camera, exists := cameraMap.getCamera(cameraID)
+					if exists {
 
-						err = sendUDP(req.Addr.String(), outgoingReq)
-						if err != nil {
-							fmt.Println(err)
+						packetLists := camera.getFeed(incoming.SeqNum)
+
+						for _, packetList := range packetLists {
+							for _, packet := range packetList {
+								outgoingReq, err := generateRequest(packet, RequestSuccessful)
+								if err != nil {
+									fmt.Println(err)
+									continue
+								}
+
+								err = sendUDP(req.Addr.String(), outgoingReq)
+								if err != nil {
+									fmt.Println(err)
+								}
+							}
 						}
+					} else {
+						fmt.Println("Camera not found")
 					}
 
 				}

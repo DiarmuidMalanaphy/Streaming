@@ -21,9 +21,9 @@ class Networking:
         self.hostPort = hostPort
 
 
-    def update_camera(self, img, camera_id):
+    def update_camera(self, img, camera_id,seq_num):
         #Essentially just break the image down into chunks and push them to the server
-        packets = self.serialise_image(img, camera_id)
+        packets = self.serialise_image(img, camera_id,seq_num)
         for packet in packets:
             #You can't have the socket_length lower than 0.01 otherwise it complains about blocking <- ideally you want it quite low though
             response = self.__send_general_payload_request(RequestType.RequestTypeUpdateCamera.value, packet,socket_length= 0.01)
@@ -44,18 +44,26 @@ class Networking:
         return(unpacked_data)
         
 
-    def request_feed(self,ID,bands,height,width):
+    def request_feed(self,ID,bands,height,width,seq_num):
         #Prepare the ID
-        _,payload = self.serialize_payload(ID,"I")
-        payload = self._send_multiple_packet_request(RequestType.RequestTypeRequestFeed.value,payload)
-        if payload is not None:
-            try:
-                #For reforming the image we need to know the original dimensions.
-                image = self.deserialise_image(payload,bands,width,height)
-                return(image)
-            except Exception as e:
-                return(None)
-        return(None)
+        
+        try:
+            _,payload = self.serialize_payload([ID,seq_num],"HI")
+
+            payload,new_seq = self._send_multiple_packet_request(RequestType.RequestTypeRequestFeed.value,payload)
+            if payload is not None:
+                images = []
+                for seq_num, image_data in payload.items():
+                    try:
+                        # Deserialize the image using the original dimensions
+                        image = self.deserialise_image(image_data, bands, width, height)
+                        images.append(image)  # Add the deserialized image to the list
+                    except Exception as e:
+                        print(f"Error deserializing image for sequence number {seq_num}: {e}")
+                        return(None)
+                return(images,seq_num)
+        except Exception as e:
+            return(None)
 
         
     
@@ -94,7 +102,7 @@ class Networking:
                     
                 except socket.timeout:
                     # print("Timeout: No response received")
-                    return(None)
+                    return((None,None))
                 
 
             except socket.error as e:
@@ -103,40 +111,48 @@ class Networking:
                 print(f"Other exception: {e}")
 
 
-    def _send_multiple_packet_request(self, request_type, payload): # <- used when we have to receive multiple packets back from the server
-        
+    def _send_multiple_packet_request(self, request_type, payload):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             try:
-                payload_length = len(payload)
-                request_data = struct.pack(StandardFormats.RequestHeader.value, request_type, payload_length) + payload
-                sock.settimeout(0.1)
+                request_data = struct.pack(StandardFormats.RequestHeader.value, request_type, len(payload)) + payload
+                sock.settimeout(0.3)
                 sock.sendto(request_data, (self.hostIP, self.hostPort))
 
-                packets = {}
-                #The return Header from the message must have the number of packets as a reply.
-                total_packets = None
-                while total_packets is None or len(packets) < total_packets:
+                packets_by_seq_num = {}
+                largest_seq_num = 0  # Initialize largest sequence number
+                while True:
                     try:
-                        response = sock.recv(2048)
-                        type,_,payload = self.deserialise_request(response)
-                        packet_num, total_packets = struct.unpack('=HH', payload[:4])
-                        packets[packet_num] = payload[8:]
+                        response, _ = sock.recvfrom(2048)
+                        _, _, payload = self.deserialise_request(response)
+                        header = payload[:8]
+                        packet_num, total_packets, seq_num = struct.unpack('=HHI', header)
+                        largest_seq_num = max(largest_seq_num, seq_num)  # Update largest sequence number
+                        if seq_num not in packets_by_seq_num:
+                            packets_by_seq_num[seq_num] = {}
+                        packets_by_seq_num[seq_num][packet_num] = payload[8:]
+                        if all(len(packets_by_seq_num[sn]) == total_packets for sn in packets_by_seq_num):
+                            break
                     except socket.timeout:
                         print("Timeout: No response received")
                         break
 
-                if total_packets is not None and len(packets) == total_packets:
-                    full_data = b''.join(packets[i] for i in range(total_packets))
-                    return full_data
-                else:
-                    print("Error: Missing some packets")
-                    return None
+                images = {}
+                for seq_num, packets in packets_by_seq_num.items():
+                    if len(packets) == total_packets:
+                        full_data = b''.join(packets[i] for i in range(total_packets))
+                        images[seq_num] = full_data
+                    else:
+                        print(f"Error: Missing some packets for sequence number {seq_num}")
+
+                return images, largest_seq_num
 
             except socket.error as e:
                 print(f"Socket error: {e}")
+                return None, None
             except Exception as e:
                 print(f"Other exception: {e}")
-    
+                return None, None
+
     
     
 
@@ -206,8 +222,9 @@ class Networking:
 
         return (type, payload_length, payload)
 
-    def serialise_image(self, img, camera_id):
+    def serialise_image(self, img, camera_id,seq_num):
         # Convert the image to a numpy array and flatten it
+
         img_array = np.array(img)
         
         _, compressed_img = cv2.imencode('.jpg', img_array, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -230,11 +247,12 @@ class Networking:
             data = img_bytes[start:end]
             
             # Create an ImagePacket -> the standard is on the go-side
-
             #I had an issue with this. The MTU for a lot of networks is around 600kb 
             packet = struct.pack('=512s',data)
+            
             #My network was chopping off the packets after 1024kb and I couldn't figure out why.
-            incoming_image_packet = struct.pack('=H', camera_id) + struct.pack("=IHH", message_id,i,total_packets) + packet 
+            
+            incoming_image_packet = struct.pack('=H', camera_id) + struct.pack("=IHHI", message_id,i,total_packets,seq_num) + packet 
             packets.append(incoming_image_packet)
         
         return(packets)

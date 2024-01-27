@@ -6,8 +6,13 @@ The main conceit of this project is to develop local area video streaming for an
 
 As an extra challenge I made it work over the internet too. 
 
-- [API Description](#api-documentation)
-- [Installation and Running the Code](#installation-and-setup)
+## Table of Contents
+- [Introduction](#Video-Streaming-Client-ServerModule)
+- [Key Features](#key-features)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Installation and Setup](#installation-and-setup)
+- [Running the Code](#running-the-code)
 
 
 
@@ -173,6 +178,3 @@ To run the application, execute the provided batch files. Please note that these
 
 Contributions to the project are welcome! If you have ideas for improvements or want to report a bug, please open an issue or submit a pull request.
 
----
-
-Feel free to adjust this README to better suit your project's specifics and to add any additional information that you think is relevant.

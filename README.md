@@ -31,6 +31,95 @@ The project is divided into several key components:
 4. Run the server using the provided batch file.
 5. Connect clients by running the client script.
 
+
+# API Documentation
+
+## Overview
+This API facilitates interactions with a video streaming server, enabling camera initialization, removal, feed requests, and updates. It is optimized for efficient video data transmission within a client-server architecture.
+
+## API Calls
+
+### `RequestTypeInitialiseCamera` - Request Type 1
+- **Purpose**: Adds a new camera to the server's client list.
+- **Input**: [`ImportedCamera`](#importedcamera)
+  - Contains camera identifier, color bands, width, and height.
+- **Output**: [`ExportedCamera`](#exportedcamera)
+  - Returns the initialized camera details including name, ID, bands, width, and height.
+
+### `RequestTypeRemoveCamera` - Request Type 2
+- **Purpose**: Removes a camera from the server's client list.
+- **Input**: Camera `ID`
+  - Unique identifier of the camera to be removed.
+- **Output**: None
+  - Confirms the camera has been successfully removed.
+
+### `RequestTypeUpdateCamera` - Request Type 3
+- **Purpose**: Updates the server buffer with a new image from a camera.
+- **Input**: [`IncomingImagePacket`](#incomingimagepacket)
+  - Contains the camera ID and image data to be updated.
+- **Output**: None
+  - Indicates the image has been successfully updated in the buffer.
+
+### `RequestTypeRequestFeed` - Request Type 4
+- **Purpose**: Requests the video feed from a specific camera.
+- **Input**: [`FeedRequest`](#feedrequest)
+  - Contains the camera ID and sequence number for the requested feed.
+- **Output**: [`FeedResponse`](#feedresponse)
+  - Provides the most recent sequence number and buffer containing the feed data in UDP packets.
+
+
+
+
+## Data Structures
+
+### `ImportedCamera`
+- Used when initialising the camera.
+- **Name**: `[20]byte` - Identifier for the camera.
+- **Bands**: `uint16` - Number of color bands.
+- **Width**: `uint16` - Width resolution of the camera.
+- **Height**: `uint16` - Height resolution of the camera.
+
+### `FeedRequest`
+- Used when requesting the feed from a single camera.
+- **ID**: `uint16` - Unique identifier for the camera feed request.
+- **SeqNum**: `uint32` - Sequence number for the feed request.
+
+### `FeedResponse`
+- Response to a feed request.
+- **mostRecentSequenceNumber**: `uint32` - The most recent sequence number in the feed.
+- **buffer**: `[][]UDPPacket` - Buffer holding the feed data in UDP packets.
+
+### `ExportedCamera`
+- Used when a request for camera information is requested.
+- **Name**: `[20]byte` - Name of the camera.
+- **ID**: `uint16` - Unique identifier for the camera.
+- **Bands**: `uint16` - Number of color bands.
+- **Width**: `uint16` - Width resolution of the camera.
+- **Height**: `uint16` - Height resolution of the camera.
+
+### `UDPPacket`
+- Structure of a packet of video information. Sequence numbers and packet numbers are included as reassembly is required.
+- **PacketNum**: `uint16` - Packet number within a sequence.
+- **TotalPackets**: `uint16` - Total number of packets in a sequence.
+- **SeqNum**: `uint32` - Sequence number of the packet.
+- **Data**: `[packetSize]byte` - Data contained in the packet.
+
+### `IncomingImagePacket`
+- Used when sending information from the client to the server. Typically when a camera sends image information to the server.
+- **CameraID**: `uint16` - Unique identifier for the camera sending the packet.
+- **ImageInformation**: `ImagePacket` - Image data packet information.
+
+### `ImagePacket`
+- Used to describe an image
+- **MessageID**: `uint32` - Unique identifier for the image message.
+- **PacketNum**: `uint16` - Packet number within the image message.
+- **TotalPackets**: `uint16` - Total number of packets in the image message.
+- **SeqNum**: `uint32` - Number representing the image within the context of a larger video stream.
+- **Data**: `[packetSize]byte` - Image data contained in the packet.
+
+
+
+
 ## Future Enhancements
 
 - Transition the client application from Python to Dart for a more engaging UI using Flutter.

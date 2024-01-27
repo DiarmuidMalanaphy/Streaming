@@ -44,7 +44,7 @@ class Networking:
         return(unpacked_data)
         
 
-    def request_feed(self,ID,bands,height,width,seq_num):
+    def request_feed(self,ID,seq_num):
         #Prepare the ID
         
         try:
@@ -56,8 +56,8 @@ class Networking:
                 for seq_num, image_data in payload.items():
                     try:
                         # Deserialize the image using the original dimensions
-                        image = self.deserialise_image(image_data, bands, width, height)
-                        images.append(image)  # Add the deserialized image to the list
+                        #image = self.deserialise_image(image_data, bands, width, height)
+                        images.append(image_data)  # Add the deserialized image to the list
                     except Exception as e:
                         print(f"Error deserializing image for sequence number {seq_num}: {e}")
                         return(None)
@@ -227,11 +227,11 @@ class Networking:
 
         img_array = np.array(img)
         
-        _, compressed_img = cv2.imencode('.jpg', img_array, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        _, compressed_img = cv2.imencode('.jpg', img_array, [cv2.IMWRITE_JPEG_QUALITY, 50])
         img_bytes = compressed_img.tobytes()
 
         # Determine the total number of packets needed
-        packet_size = 512
+        packet_size = 1312
         total_packets = math.ceil(len(img_bytes) / packet_size)
 
         # Generate a unique message ID
@@ -248,7 +248,7 @@ class Networking:
             
             # Create an ImagePacket -> the standard is on the go-side
             #I had an issue with this. The MTU for a lot of networks is around 600kb 
-            packet = struct.pack('=512s',data)
+            packet = struct.pack('=1312s',data)
             
             #My network was chopping off the packets after 1024kb and I couldn't figure out why.
             

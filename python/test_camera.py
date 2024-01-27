@@ -10,7 +10,7 @@ class Camera:
         self.height = height
 
 def capture_webcam_images(camera, networkTool):
-    fps = 10
+    fps = 30
     frame_interval = 1.0 / fps  # Interval between frames
 
     # Initialize the webcam (0 is the default camera)
@@ -55,7 +55,7 @@ ip_address = input("Please enter the IP address to connect to: ")
 
 #The camera creation is handled by the Server, ID is returned.
 tool = Networking(ip_address)
-camera = tool.initialise_camera("Benni", 3, 200, 200)
+camera = tool.initialise_camera("Benni", 3, 150, 150)
 camera = Camera(camera[1], camera[2], camera[3], camera[4])
 print("Camera ID is ",camera.ID)
 capture_webcam_images(camera, tool)

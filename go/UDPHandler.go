@@ -23,7 +23,7 @@ func listen(reqChan chan<- networkData) {
 		os.Exit(1)
 	}
 	defer conn.Close()
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 1424) //Arbitrary
 
 	publicIp, err := getPublicIP()
 	if err != nil {

@@ -1,6 +1,6 @@
 package main
 
-import "sync"
+const packetSize = 1312
 
 type ImportedCamera struct {
 	Name   [20]byte
@@ -43,7 +43,7 @@ type UDPPacket struct {
 	PacketNum    uint16
 	TotalPackets uint16
 	SeqNum       uint32
-	Data         [512]byte
+	Data         [packetSize]byte
 }
 
 type ImagePacket struct {
@@ -51,7 +51,7 @@ type ImagePacket struct {
 	PacketNum    uint16
 	TotalPackets uint16
 	SeqNum       uint32
-	Data         [512]byte
+	Data         [packetSize]byte
 }
 
 type IncomingImagePacket struct {
@@ -63,5 +63,4 @@ type ImageData struct {
 	Packets      map[uint16][]byte
 	Received     uint16
 	TotalPackets uint16
-	Mutex        sync.Mutex
 }

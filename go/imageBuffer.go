@@ -56,3 +56,16 @@ func (b *ImageBuffer) GetSmallestSeqNum() *ImageBufferItem {
 	}
 	return &smallest
 }
+
+func (b *ImageBuffer) IsValidPacket(seqNum uint32) bool {
+	// If the buffer is empty, any packet is considered valid
+	if len(b.Items) == 0 {
+		return true
+	}
+
+	// Get the smallest sequence number in the buffer
+	smallestSeqNum := b.GetSmallestSeqNum().SeqNum
+
+	// A packet is valid if its sequence number is greater than or equal to the smallest
+	return seqNum >= smallestSeqNum
+}

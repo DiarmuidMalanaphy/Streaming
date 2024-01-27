@@ -55,7 +55,7 @@ ip_address = input("Please enter the IP address to connect to: ")
 
 #The camera creation is handled by the Server, ID is returned.
 tool = Networking(ip_address)
-camera = tool.initialise_camera("Benni", 3, 150, 150)
+camera = tool.initialise_camera("Benni", 3, 250, 250)
 camera = Camera(camera[1], camera[2], camera[3], camera[4])
 print("Camera ID is ",camera.ID)
 capture_webcam_images(camera, tool)

@@ -8,7 +8,7 @@ The main conceit of this project is to develop local area video streaming for an
 
 - **Client-Server Architecture**: Efficiently handles video data transmission from a camera to a server and then to clients.
 - **Global Functionality**: The system is built to operate globally, with varying ping times depending on location, be aware you will have to handle portforwarding for it to work globally.
-- **Multilingual Development**: The server is implemented in Go (Golang), and the client is in Python, with a future plan to migrate to Dart for integration with Flutter for a superior user interface.
+- **Multilingual Development**: The server is implemented in Go (Golang), and the client is in Python, with a future plan to migrate to Dart for integration with Flutter for a better user interface.
 - **Socket Programming**: Uses low-level socket interfaces for precise control over network communications.
 
 ## Running the Code

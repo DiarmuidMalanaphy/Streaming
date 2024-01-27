@@ -2,7 +2,7 @@
 
 pip install -r requirements.txt
 pip3 install -r requirements.txt
-cd python
+cd Client
 
 py test_watcher.py
 python test_watcher.py

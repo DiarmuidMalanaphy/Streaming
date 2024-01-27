@@ -1,7 +1,8 @@
 @echo off
 
 
-cd go
+cd Server
+
 
 
 go run .

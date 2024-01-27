@@ -2,7 +2,7 @@
 
 pip install -r requirements.txt
 pip3 install -r requirements.txt
-cd python
+cd Client
 
 py test_camera.py
 python test_camera.py

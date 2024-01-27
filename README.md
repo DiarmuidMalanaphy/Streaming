@@ -80,6 +80,14 @@ This API facilitates interactions with a video streaming server, enabling camera
 - **Width**: `uint16` - Width resolution of the camera.
 - **Height**: `uint16` - Height resolution of the camera.
 
+### `ExportedCamera`
+- Used when a request for camera information is requested.
+- **Name**: `[20]byte` - Name of the camera.
+- **ID**: `uint16` - Unique identifier for the camera.
+- **Bands**: `uint16` - Number of color bands.
+- **Width**: `uint16` - Width resolution of the camera.
+- **Height**: `uint16` - Height resolution of the camera.
+
 ### `FeedRequest`
 - Used when requesting the feed from a single camera.
 - **ID**: `uint16` - Unique identifier for the camera feed request.
@@ -89,14 +97,6 @@ This API facilitates interactions with a video streaming server, enabling camera
 - Response to a feed request.
 - **mostRecentSequenceNumber**: `uint32` - The most recent sequence number in the feed.
 - **buffer**: `[][]UDPPacket` - Buffer holding the feed data in UDP packets.
-
-### `ExportedCamera`
-- Used when a request for camera information is requested.
-- **Name**: `[20]byte` - Name of the camera.
-- **ID**: `uint16` - Unique identifier for the camera.
-- **Bands**: `uint16` - Number of color bands.
-- **Width**: `uint16` - Width resolution of the camera.
-- **Height**: `uint16` - Height resolution of the camera.
 
 ### `UDPPacket`
 - Structure of a packet of video information. Sequence numbers and packet numbers are included as reassembly is required.

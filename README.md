@@ -4,8 +4,8 @@ This repository contains a client-server model designed for video streaming. It 
 
 The main conceit of this project is to develop local area video streaming for an upcoming project, again I've used Golang because it's performant, designed for concurrent systems, and I like working with it.
 
-['API Description'][#API Documentation#]
-['Installation and running the code][#Installation and Setup]
+- [API Description](#api-documentation)
+- [Installation and Running the Code](#installation-and-setup)
 
 
 

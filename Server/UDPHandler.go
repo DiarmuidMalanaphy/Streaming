@@ -36,7 +36,7 @@ func listen(reqChan chan<- networkData) {
 		return
 	}
 
-	fmt.Printf("UDP server listening on port 8000 and IP - %s\n", publicIp)
+	fmt.Printf("UDP server listening on port 8000 and Global IP - %s\n", publicIp)
 	fmt.Printf("Server local IP is - %s\n", localIP)
 	for {
 

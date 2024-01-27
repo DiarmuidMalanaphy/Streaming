@@ -129,10 +129,43 @@ This API facilitates interactions with a video streaming server, enabling camera
 
 ## Running the Code
 
-To run the application, execute the provided batch files.
+To run the application, execute the provided batch files. Please note that these batch files are designed for Windows and may not work on other operating systems.
 
+### Local Testing Procedure
 
+1. **Start the Server**:
+   - Double-click the `start_server.bat` file.
+   - Note the local IP address displayed in the server terminal.
 
+2. **Start a Camera**:
+   - Double-click the `start_camera.bat` file.
+   - When prompted for an IP in the command line, enter the local IP address from the server terminal.
+
+3. **Start a Watching Setup**:
+   - Double-click the `start_watching.bat` file.
+   - When prompted for an IP, enter the local IP address from the server terminal.
+   - Enter the ID of the camera you want to watch.
+   - The stream should now be visible on the watching setup.
+
+### Global Testing Procedure
+
+1. **Set Up Port Forwarding**:
+   - Enable port forwarding on port 8000 for your computer's local IP address.
+   - You can find the local IP address by starting the server and reading the terminal output or by using the `IPConfig` command in the terminal.
+
+2. **Start the Server**:
+   - Double-click the `start_server.bat` file after setting up port forwarding.
+   - Note the Global IP address displayed in the server terminal (usually labeled "Global" and shown on the first line).
+
+3. **Start a Camera**:
+   - Double-click the `start_camera.bat` file.
+   - When prompted for an IP, enter the Global IP address from the server terminal.
+
+4. **Start a Watching Setup**:
+   - Double-click the `start_watching.bat` file.
+   - When prompted for an IP, enter the Global IP address from the server terminal.
+   - Enter the ID of the camera you want to watch.
+   - The stream should now be accessible on the watching setup.
 
 ## Contributing
 

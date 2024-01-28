@@ -68,6 +68,12 @@ This API facilitates interactions with a video streaming server, enabling camera
 - **Output**: [`FeedResponse`](#feedresponse)
   - Provides the most recent sequence number and buffer containing the feed data in UDP packets.
 
+### `RequestTypeRequestCameras` - Request Type 5
+- **Purpose**: Requests information about all cameras.
+- **Input**: 'None
+  
+- **Output**: a collection of [`ExportedCamera`](#ExportedCamera)
+  - Provides meta information about the cameras, such as width and existence.
 
 
 

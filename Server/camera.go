@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"sync"
 )
 
@@ -91,7 +93,7 @@ func (c *Camera) handleIncomingPacket(packet ImagePacket) {
 
 func (c *Camera) updateImageFromBytes(jpegBytes []byte, seqNum uint32) {
 
-	packets := c.SplitIntoUDPPackets(seqNum, jpegBytes)
+	packets := SplitIntoUDPPackets(seqNum, jpegBytes)
 
 	newItem := ImageBufferItem{
 		SeqNum:  seqNum,
@@ -100,7 +102,7 @@ func (c *Camera) updateImageFromBytes(jpegBytes []byte, seqNum uint32) {
 	c.Buffer.Add(newItem)
 }
 
-func (c *Camera) SplitIntoUDPPackets(seqNum uint32, jpegBytes []byte) []UDPPacket {
+func SplitIntoUDPPackets(seqNum uint32, jpegBytes []byte) []UDPPacket {
 	// We flatten the image for transmission
 
 	totalPackets := (len(jpegBytes) + packetSize - 1) / packetSize
@@ -135,4 +137,10 @@ func (c *Camera) SplitIntoUDPPackets(seqNum uint32, jpegBytes []byte) []UDPPacke
 func (c *Camera) getFeed(seqNum uint32) [][]UDPPacket { // make this return based on the sequenceNumber
 
 	return (c.Buffer.getPackets(seqNum))
+}
+
+func SerializeCamera(camera ExportedCamera) []byte {
+	var buffer bytes.Buffer
+	binary.Write(&buffer, binary.LittleEndian, &camera)
+	return buffer.Bytes()
 }

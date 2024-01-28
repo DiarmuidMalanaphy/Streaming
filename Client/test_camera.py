@@ -37,8 +37,8 @@ def capture_webcam_images(camera, networkTool):
                 #OpenCv stores it as BGR
                 #Resize the frame to the size of the "camera"
             resized_frame = cv2.resize(frame, (camera.width, camera.height))
-            frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
-            networkTool.update_camera(frame_rgb, camera.ID,seq_num)
+            #frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+            networkTool.update_camera(resized_frame, camera.ID,seq_num)
 
             # Wait for the frame interval
             seq_num = seq_num + 1

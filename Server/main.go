@@ -121,6 +121,25 @@ func main() {
 				}
 
 			case RequestTypeRequestCameras:
+				if cameraMap != nil {
+
+					cameras := cameraMap.getCameras()
+					seqnum := 0
+					for _, camera := range cameras {
+						seqNum := uint32(seqnum + 1) // Generate a unique sequence number for this camera
+						data := SerializeCamera(camera)
+						packets := SplitIntoUDPPackets(seqNum, data)
+						for _, packet := range packets {
+							outgoingReq, err := generateRequest(packet, RequestSuccessful)
+							err = sendUDP(req.Addr.String(), outgoingReq)
+							if err != nil {
+								fmt.Println("Error sending UDP packets:", err)
+							}
+						}
+
+					}
+
+				}
 
 			}
 

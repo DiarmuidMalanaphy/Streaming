@@ -30,8 +30,8 @@ def continuously_request_images(network_tool, ID, interval):
 
                     if image is not None:
                         # Convert RGB to BGR if necessary
-                        bgr_image = convert_rgb_to_bgr(image)
-                        cv2.imshow("Video Feed", bgr_image)
+                        #bgr_image = convert_rgb_to_bgr(image)
+                        cv2.imshow("Video Feed", image)
                         time.sleep(display_time_per_image)  # Adjusted display time
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break  # Exit the inner loop if 'q' is pressed

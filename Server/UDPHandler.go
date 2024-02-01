@@ -28,7 +28,7 @@ func listen(reqChan chan<- networkData) {
 	publicIp, err := getPublicIP()
 	if err != nil {
 		fmt.Println("Error getting public IP:", err)
-		return
+
 	}
 	localIP, err := getLocalIP()
 	if err != nil {

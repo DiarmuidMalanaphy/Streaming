@@ -192,9 +192,6 @@ Future<int> getNextCameraId(int currentId) async {
                   controller: _controller,
                   onChanged: (newText) {
                     setState(() {
-                      if (_isRequesting) {
-                        toggleContinuousRequest(); // Stop the current stream
-                      }
                       _imageBuffer.clear();
                       _currentImageProvider = null; // Set image to null when a new ID is typed
                     });

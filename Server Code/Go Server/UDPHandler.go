@@ -7,17 +7,23 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	reuse "github.com/libp2p/go-reuseport"
 )
+
 
 func listen(reqChan chan<- networkData) {
 
-	addr, err := net.ResolveUDPAddr("udp", ":8000") // Listen on all interfaces
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	// addr, err := net.ResolveUDPAddr("udp", ":8000") // Listen on all interfaces
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
 
-	conn, err := net.ListenUDP("udp", addr)
+	// conn, err := net.ListenUDP("udp", addr)
+	addr := "0.0.0.0:8000"
+
+	
+	conn, err := reuse.ListenPacket("udp", addr)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -39,8 +45,8 @@ func listen(reqChan chan<- networkData) {
 	fmt.Printf("UDP server listening on port 8000 and Global IP - %s\n", publicIp)
 	fmt.Printf("Server local IP is - %s\n", localIP)
 	for {
-
-		n, remoteAddr, err := conn.ReadFromUDP(buffer)
+		// n, remoteAddr, err := conn.ReadFromUDP(buffer)
+		n, remoteAddr, err := conn.ReadFrom(buffer)
 
 		req, err := deserialiseRequest(buffer[:n])
 
@@ -56,32 +62,29 @@ func listen(reqChan chan<- networkData) {
 }
 
 func sendUDP(address string, data []byte) error {
-	// Resolve the UDP address
-	udpAddr, err := net.ResolveUDPAddr("udp", address)
-	if err != nil {
-		return err
-	}
-	localAddr, err := net.ResolveUDPAddr("udp", ":8000")
-	if err != nil {
-		return err
-	}
+    // Resolve the UDP address
+    // udpAddr, err := net.ResolveUDPAddr("udp", address)
+    // if err != nil {
+    //     fmt.Println(err)
+    //     return err
+    // }
 
-	// Establish a UDP connection
-	conn, err := net.DialUDP("udp", localAddr, udpAddr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+    // Use go-reuseport to create a connection
+    conn, err := reuse.Dial("udp", ":8000", address)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
+    defer conn.Close()
 
-	// Send the data
+    // Send the data
+    _, err = conn.Write(data)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
 
-	_, err = conn.Write(data)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+    return nil
 }
 
 func getPublicIP() (string, error) {
